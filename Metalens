@@ -1,0 +1,41 @@
+clc; clear; close all;
+
+%% Define Metalens Parameters
+lambda = 633e-9;  % Wavelength (meters) - Example: 633 nm (red laser)
+focal_length = 0.01;  % Focal length (10 mm)
+lens_diameter = 100e-6;  % Metalens diameter (100 microns)
+N = 500;  % Grid size
+
+%% Create Spatial Grid
+x = linspace(-lens_diameter/2, lens_diameter/2, N);
+y = linspace(-lens_diameter/2, lens_diameter/2, N);
+[X, Y] = meshgrid(x, y);
+R = sqrt(X.^2 + Y.^2);  % Radial coordinate
+
+%% Define the Metalens Phase Profile (Hyperbolic Phase)
+k = 2 * pi / lambda;  % Wave number
+phase_profile = mod(k * (sqrt(R.^2 + focal_length^2) - focal_length), 2*pi); % Metalens phase
+
+% Apply aperture mask (zero phase outside lens)
+phase_profile(R > lens_diameter/2) = 0;
+
+%% Display the Metalens Phase Mask
+figure;
+imagesc(x * 1e6, y * 1e6, phase_profile);
+colormap(jet); colorbar;
+xlabel('X (microns)'); ylabel('Y (microns)');
+title('Metalens Phase Profile');
+axis square;
+
+%% Simulate Beam Focusing via Fourier Optics
+E_lens = exp(1i * phase_profile);  % Apply phase shift
+E_focal = fftshift(fft2(E_lens));  % Compute the Fourier transform
+intensity_focal = abs(E_focal).^2; % Intensity distribution
+
+%% Display Focused Beam Intensity
+figure;
+imagesc(intensity_focal);
+colormap(hot); colorbar;
+xlabel('X pixels'); ylabel('Y pixels');
+title('Focused Beam Intensity at Focal Plane');
+axis square;
